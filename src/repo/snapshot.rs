@@ -1,13 +1,11 @@
 use anyhow::{Context, Ok, Result};
-use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::crypto::{aead, hash};
 use crate::repo::backend::Backend;
-use crate::repo::snapshot;
 use crate::repo::{
     backend::ObjectType,
     open::RepoContext,

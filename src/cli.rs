@@ -16,5 +16,9 @@ pub enum Commands {
     },
     Open {
         repo: PathBuf,
+    },
+    Backup {
+        path: PathBuf,
+        repo: PathBuf,
     }
 }

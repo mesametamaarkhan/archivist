@@ -1,7 +1,6 @@
 use anyhow::Result;
-use std::path::Path;
 use clap::Parser;
-use archivist::cli::{Cli, Commands};
+use archivist::{backup, cli::{Cli, Commands}, repo};
 
 fn validate_repo_path(path: &std::path::Path) -> anyhow::Result<()> {
     if path.as_os_str() == "-" {
@@ -21,6 +20,13 @@ fn main() -> Result<()> {
             validate_repo_path(&repo)?;
             let _ctx = archivist::repo::open::open_repository(&repo)?;
             println!("Repository opened successfully");
+        },
+        Commands::Backup { path, repo } => {
+            validate_repo_path(&repo)?;
+            let ctx = repo::open::open_repository(&repo)?;
+            let snapshot = backup::run_backup(&ctx, &path)?;
+            println!("Backup complete.");
+            println!("Snapshot ID: {}", snapshot);
         }
     }
 

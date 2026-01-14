@@ -1,5 +1,5 @@
 use anyhow::{Context, Ok, Result};
-use std::{fs, path};
+use std::{fs};
 use std::path::Path;
 use crate::crypto::{aead, hash};
 use crate::repo::backend::Backend;
