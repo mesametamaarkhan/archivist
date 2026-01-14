@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::path::Path;
 use clap::Parser;
 use archivist::cli::{Cli, Commands};
 
