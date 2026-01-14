@@ -19,6 +19,10 @@ pub fn init_repository(repo_path: &Path) -> Result<()> {
         anyhow::bail!("repository already exists");
     }
 
+    for sub in &["objects/blobs", "objects/trees", "objects/snapshots"] {
+        fs::create_dir_all(repo_dir.join(sub))?;
+    }
+
     fs::create_dir_all(&repo_dir);
 
     // write version (plaintext, non-secret)

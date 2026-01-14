@@ -14,4 +14,7 @@ pub enum Commands {
     Init {
         repo: PathBuf,
     },
+    Open {
+        repo: PathBuf,
+    }
 }
