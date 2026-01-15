@@ -91,6 +91,32 @@ impl Snapshot {
         Ok(())
     }
 
+    pub fn load(ctx: &RepoContext, hash: &str) -> Result<Snapshot> {
+        let stored = ctx.backend.get(ObjectType::Snapshot, hash)?;
+
+        if stored.len() < 24 {
+            anyhow::bail!("corrupted snapshot {}", hash);
+        }
+
+        let (nonce, ciphertext) = stored.split_at(24);
+
+        let plaintext = aead::decrypt(
+            &ctx.repo_key,
+            ciphertext,
+            nonce.try_into().unwrap(),
+            b"archivist-snapshot-v1",
+        )
+        .map_err(|e| anyhow::anyhow!("snapshot decryption failed: {:?}", e))?;
+
+        let computed = hash::sha256_hex(&plaintext);
+        if computed != hash {
+            anyhow::bail!("snapshot hash mismatch");
+        }
+
+        let snapshot: Snapshot = serde_cbor::from_slice(&plaintext)?;
+        Ok(snapshot)
+    }
+
     pub fn read_latest(ctx: &RepoContext) -> Result<String> {
         let path = ctx.root.join("index").join("latest");
         let data = fs::read_to_string(&path)

@@ -8,7 +8,6 @@ fn validate_repo_path(path: &std::path::Path) -> anyhow::Result<()> {
     }
     Ok(())
 }
-
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
@@ -27,6 +26,11 @@ fn main() -> Result<()> {
             let snapshot = backup::run_backup(&ctx, &path)?;
             println!("Backup complete.");
             println!("Snapshot ID: {}", snapshot);
+        },
+        Commands::Snapshots { repo } => {
+            validate_repo_path(&repo)?;
+            let ctx = repo::open::open_repository(&repo)?;
+            backup::list_snapshots(&ctx)?;
         }
     }
 

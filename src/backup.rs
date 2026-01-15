@@ -7,7 +7,6 @@ use crate::repo::{
     tree::Tree,
 };
 
-
 pub fn run_backup(ctx: &RepoContext, source: &Path) -> Result<String> {
     if !source.exists() {
         anyhow::bail!("backup source does not exist");
@@ -26,4 +25,27 @@ pub fn run_backup(ctx: &RepoContext, source: &Path) -> Result<String> {
         .context("failed to create snapshot")?;
 
     Ok(snapshot_id)
+}
+
+pub fn list_snapshots(ctx: &RepoContext) -> Result<()> {
+    let mut current = match Snapshot::read_latest(ctx) {
+        Ok(h) => h,
+        Err(_) => {
+            println!("no snapshots found");
+            return Ok(());
+        }
+    };
+
+    println!("Snapshots (newest -> oldest): \n");
+
+    loop {
+        let snap = Snapshot::load(ctx, &current)?;
+        println!("{} {} {}", current, snap.timestamp, snap.hostname);
+        match snap.parent {
+            Some(parent) => current = parent,
+            None => break,
+        }
+    }
+
+    Ok(())
 }

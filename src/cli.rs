@@ -20,5 +20,8 @@ pub enum Commands {
     Backup {
         path: PathBuf,
         repo: PathBuf,
+    },
+    Snapshots {
+        repo: PathBuf,
     }
 }
