@@ -4,6 +4,7 @@ use std::{fs};
 use std::path::{Path, PathBuf};
 use crate::crypto::{aead, kdf};
 use crate::repo::local::LocalBackend;
+use crate::repo::lock::RepoLock;
 
 #[derive(Deserialize)]
 struct RepoConfig {
@@ -17,14 +18,21 @@ pub struct RepoContext {
     pub repo_key: [u8; 32],
     pub version: u32,
     pub backend: LocalBackend,
+    _lock: Option<RepoLock>
 }
 
-pub fn open_repository(repo_path: &Path) -> Result<RepoContext> {
+pub fn open_repository(repo_path: &Path, write: bool) -> Result<RepoContext> {
     let repo_dir = repo_path.join("archivist");
 
     if !repo_dir.exists() {
         anyhow::bail!("not an archivist repository");
     }
+
+    let lock = if write {
+        Some(RepoLock::acquire(repo_path)?)
+    } else {
+        None
+    };
 
     // read version
     let version_bytes = fs::read(repo_dir.join("version"))
@@ -72,5 +80,6 @@ pub fn open_repository(repo_path: &Path) -> Result<RepoContext> {
         repo_key, 
         version,
         backend,
+        _lock: lock
     })
 }

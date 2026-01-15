@@ -1,6 +1,11 @@
 use anyhow::Result;
 use clap::Parser;
-use archivist::{backup, cli::{Cli, Commands}, repo};
+
+use archivist::{
+    backup,
+    cli::{Cli, Commands},
+    repo,
+};
 
 fn validate_repo_path(path: &std::path::Path) -> anyhow::Result<()> {
     if path.as_os_str() == "-" {
@@ -8,39 +13,44 @@ fn validate_repo_path(path: &std::path::Path) -> anyhow::Result<()> {
     }
     Ok(())
 }
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
+
     match cli.command {
         Commands::Init { repo } => {
             validate_repo_path(&repo)?;
-            archivist::repo::init::init_repository(&repo)?;
+            repo::init::init_repository(&repo)?;
         }
         Commands::Open { repo } => {
             validate_repo_path(&repo)?;
-            let _ctx = archivist::repo::open::open_repository(&repo)?;
+            repo::open::open_repository(&repo, false)?;
             println!("Repository opened successfully");
-        },
+        }
         Commands::Backup { path, repo } => {
             validate_repo_path(&repo)?;
-            let ctx = repo::open::open_repository(&repo)?;
+            let ctx = repo::open::open_repository(&repo, true)?;
             let snapshot = backup::run_backup(&ctx, &path)?;
-            println!("Backup complete.");
-            println!("Snapshot ID: {}", snapshot);
-        },
+            println!("Backup complete.\nSnapshot ID: {}", snapshot);
+        }
         Commands::Snapshots { repo } => {
             validate_repo_path(&repo)?;
-            let ctx = repo::open::open_repository(&repo)?;
+            let ctx = repo::open::open_repository(&repo, false)?;
             backup::list_snapshots(&ctx)?;
-        },
-        Commands::Restore { snapshot, repo, target } => {
+        }
+        Commands::Restore {
+            snapshot,
+            repo,
+            target,
+        } => {
             validate_repo_path(&repo)?;
-            let ctx = repo::open::open_repository(&repo)?;
+            let ctx = repo::open::open_repository(&repo, false)?;
             backup::run_restore(&ctx, &snapshot, &target)?;
             println!("Restore complete");
-        },
+        }
         Commands::Check { repo } => {
             validate_repo_path(&repo)?;
-            let ctx = repo::open::open_repository(&repo)?;
+            let ctx = repo::open::open_repository(&repo, false)?;
             backup::run_check(&ctx)?;
             println!("Check complete");
         }

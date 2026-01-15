@@ -5,3 +5,4 @@ pub mod local;
 pub mod blob;
 pub mod tree;
 pub mod snapshot;
+pub mod lock;
