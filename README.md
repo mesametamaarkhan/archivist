@@ -170,5 +170,3 @@ archivist check ~/myrepo
 ## License
 
 MIT License © Mesam E Tamaar Khan
-
-```
