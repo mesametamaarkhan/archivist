@@ -1,6 +1,6 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
@@ -98,6 +98,31 @@ impl Tree {
         Ok(tree_hash)
     }
 
+    pub fn load(ctx: &RepoContext, tree_hash: &str) -> Result<Tree> {
+        let stored = ctx.backend.get(ObjectType::Tree, tree_hash)?;
+        if stored.len() < 24 {
+            anyhow::bail!("corrupted tree {}", tree_hash);
+        }
+
+        let (nonce, ciphertext) = stored.split_at(24);
+
+        let plaintext = aead::decrypt(
+            &ctx.repo_key,
+            ciphertext,
+            nonce.try_into().unwrap(),
+            b"archivist-tree-v1",
+        )
+        .map_err(|e| anyhow::anyhow!("tree decryption failed: {:?}", e))?;
+
+        let computed = hash::sha256_hex(&plaintext);
+        if computed != tree_hash {
+            anyhow::bail!("tree hash mismatch {}", tree_hash);
+        }
+
+        let tree: Tree = serde_cbor::from_slice(&plaintext)?;
+        Ok(tree)
+    }
+
     pub fn restore(ctx: &RepoContext, tree_hash: &str, target: &Path) -> Result<()> {
         let stored = ctx.backend.get(ObjectType::Tree, &tree_hash)?;
         if stored.len() < 24 {
@@ -146,4 +171,35 @@ impl Tree {
 
         Ok(())
     }
+
+    pub fn check(ctx: &RepoContext, tree_hash: &str, checked_trees: &mut HashSet<String>, checked_blobs: &mut HashSet<String>,) -> Result<()> {
+        if checked_trees.contains(tree_hash) {
+            return Ok(());
+        }
+
+        let tree = Tree::load(ctx, tree_hash)?;
+        checked_trees.insert(tree_hash.to_string());
+
+        for entry in tree.entries.values() {
+            match entry {
+                TreeEntry::File { blob, .. } => {
+                    if !checked_blobs.contains(blob) {
+                        Blob::load(ctx, blob)?;
+                        checked_blobs.insert(blob.clone());
+                    }
+                }
+                TreeEntry::Dir { tree, .. } => {
+                    Tree::check(
+                        ctx,
+                        tree,
+                        checked_trees,
+                        checked_blobs,
+                    )?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
 }

@@ -36,7 +36,13 @@ fn main() -> Result<()> {
             validate_repo_path(&repo)?;
             let ctx = repo::open::open_repository(&repo)?;
             backup::run_restore(&ctx, &snapshot, &target)?;
-            print!("Restore complete");
+            println!("Restore complete");
+        },
+        Commands::Check { repo } => {
+            validate_repo_path(&repo)?;
+            let ctx = repo::open::open_repository(&repo)?;
+            backup::run_check(&ctx)?;
+            println!("Check complete");
         }
     }
 

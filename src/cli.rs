@@ -28,5 +28,8 @@ pub enum Commands {
         snapshot: String,
         repo: PathBuf,
         target: PathBuf,
+    },
+    Check {
+        repo: PathBuf,
     }
 }

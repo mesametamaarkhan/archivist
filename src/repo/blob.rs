@@ -70,4 +70,28 @@ impl Blob {
 
         Ok(())
     }
+
+    pub fn load(ctx: &RepoContext, hash: &str) -> Result<Vec<u8>> {
+        let stored = ctx.backend.get(ObjectType::Blob, hash)?;
+        if stored.len() < 24 {
+            anyhow::bail!("corrupted blob {}", hash);
+        }
+
+        let (nonce, ciphertext) = stored.split_at(24);
+
+        let plaintext = aead::decrypt(
+            &ctx.repo_key,
+            ciphertext,
+            nonce.try_into().unwrap(),
+            b"archivist-blob-v1",
+        )
+        .map_err(|e| anyhow::anyhow!("blob decryption failed: {:?}", e))?;
+
+        let computed = hash::sha256_hex(&plaintext);
+        if computed != hash {
+            anyhow::bail!("blob hash mismatch {}", hash);
+        }
+
+        Ok(plaintext)
+    }
 }
