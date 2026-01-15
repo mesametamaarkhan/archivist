@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
-use std::path::Path;
+use std::{any, path::Path};
 
 use crate::repo::{
     open::RepoContext,
-    snapshot::Snapshot,
+    snapshot::{self, Snapshot},
     tree::Tree,
 };
 
@@ -46,6 +46,27 @@ pub fn list_snapshots(ctx: &RepoContext) -> Result<()> {
             None => break,
         }
     }
+
+    Ok(())
+}
+
+pub fn run_restore(ctx: &RepoContext, snapshot_ref: &str, target: &Path) -> Result<()> {
+    if target.exists() {
+        anyhow::bail!("restore target already exists");
+    }
+
+    let snapshot_id = if snapshot_ref == "latest" {
+        Snapshot::read_latest(ctx)?
+    } else {
+        snapshot_ref.to_string()
+    };
+
+    println!("Loading snapshot {}", snapshot_id);
+    let snapshot = Snapshot::load(ctx, &snapshot_id)?;
+
+    println!("Restoring filesystem...");
+    Tree::restore(ctx, &snapshot.root_tree, target)
+        .context("restore failed")?;
 
     Ok(())
 }

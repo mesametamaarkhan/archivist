@@ -23,5 +23,10 @@ pub enum Commands {
     },
     Snapshots {
         repo: PathBuf,
+    },
+    Restore {
+        snapshot: String,
+        repo: PathBuf,
+        target: PathBuf,
     }
 }
