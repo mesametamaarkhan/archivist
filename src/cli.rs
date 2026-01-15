@@ -2,9 +2,16 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "archivist")]
-#[command(about = "Encrypted, append-only backup system")]
+#[command(author, version, about)]
 pub struct Cli {
+    /// Verbose output (debug-level)
+    #[arg(long, global = true)]
+    pub verbose: bool,
+
+    /// Suppress all non-error output
+    #[arg(long, global = true)]
+    pub quiet: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -31,5 +38,5 @@ pub enum Commands {
     },
     Check {
         repo: PathBuf,
-    }
+    },
 }

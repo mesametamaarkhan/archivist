@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
 use std::{collections::HashSet, path::Path};
 
+use tracing::{info, debug, warn};
+
 use crate::repo::{
     open::RepoContext,
-    snapshot::{Snapshot},
+    snapshot::Snapshot,
     tree::Tree,
 };
 
@@ -16,14 +18,17 @@ pub fn run_backup(ctx: &RepoContext, source: &Path) -> Result<String> {
         anyhow::bail!("backup source must be a directory");
     }
 
-    println!("Scanning filesystem...");
+    info!("Scanning filesystem...");
     let root_tree = Tree::from_dir(ctx, source)
         .context("failed to build filesystem tree")?;
+    debug!("Root tree hash: {}", root_tree);
 
-    println!("Creating snapshot...");
+    info!("Creating snapshot...");
     let snapshot_id = Snapshot::create(ctx, root_tree)
         .context("failed to create snapshot")?;
+    debug!("Snapshot hash: {}", snapshot_id);
 
+    info!("Backup completed successfully");
     Ok(snapshot_id)
 }
 
@@ -31,16 +36,16 @@ pub fn list_snapshots(ctx: &RepoContext) -> Result<()> {
     let mut current = match Snapshot::read_latest(ctx) {
         Ok(h) => h,
         Err(_) => {
-            println!("no snapshots found");
+            info!("No snapshots found");
             return Ok(());
         }
     };
 
-    println!("Snapshots (newest -> oldest): \n");
+    info!("Snapshots (newest -> oldest):");
 
     loop {
         let snap = Snapshot::load(ctx, &current)?;
-        println!("{} {} {}", current, snap.timestamp, snap.hostname);
+        info!("{} {} {}", current, snap.timestamp, snap.hostname);
         match snap.parent {
             Some(parent) => current = parent,
             None => break,
@@ -61,13 +66,14 @@ pub fn run_restore(ctx: &RepoContext, snapshot_ref: &str, target: &Path) -> Resu
         snapshot_ref.to_string()
     };
 
-    println!("Loading snapshot {}", snapshot_id);
+    info!("Loading snapshot {}", snapshot_id);
     let snapshot = Snapshot::load(ctx, &snapshot_id)?;
 
-    println!("Restoring filesystem...");
+    info!("Restoring filesystem...");
     Tree::restore(ctx, &snapshot.root_tree, target)
         .context("restore failed")?;
 
+    info!("Restore completed successfully");
     Ok(())
 }
 
@@ -78,15 +84,15 @@ pub fn run_check(ctx: &RepoContext) -> Result<()> {
     let mut current = match Snapshot::read_latest(ctx) {
         Ok(h) => h,
         Err(_) => {
-            println!("No snapshots found.");
+            info!("No snapshots found");
             return Ok(());
         }
     };
 
-    println!("Checking snapshots...\n");
+    info!("Checking snapshots...");
 
     loop {
-        println!("Snapshot {}", current);
+        info!("Snapshot {}", current);
         let snap = Snapshot::load(ctx, &current)
             .context("snapshot corrupted")?;
 
@@ -104,10 +110,10 @@ pub fn run_check(ctx: &RepoContext) -> Result<()> {
         }
     }
 
-    println!("\nCheck complete.");
-    println!("Verified:");
-    println!("  Trees: {}", checked_trees.len());
-    println!("  Blobs: {}", checked_blobs.len());
+    info!("Check complete.");
+    info!("Verified:");
+    info!("  Trees: {}", checked_trees.len());
+    info!("  Blobs: {}", checked_blobs.len());
 
     Ok(())
 }
