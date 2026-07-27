@@ -1,8 +1,24 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+const BANNER: &str = r#"
+ █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗██╗███████╗████████╗
+██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██║██╔════╝╚══██╔══╝
+███████║██████╔╝██║     ███████║██║██║   ██║██║███████╗   ██║
+██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██║╚════██║   ██║
+██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ██║███████║   ██║
+╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚═╝╚══════╝   ╚═╝
+
+                     Secure encrypted backups
+"#;
+
 #[derive(Parser)]
-#[command(author, version, about)]
+#[command(
+    author, 
+    version, 
+    about, 
+    before_help = BANNER
+)]
 pub struct Cli {
     /// Verbose output (debug-level)
     #[arg(long, global = true)]
